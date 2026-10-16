@@ -93,6 +93,15 @@ sub,sup{line-height:0}
 .buscabtn:hover{border-color:var(--acc-line);color:var(--ink)}
 .buscabtn kbd{margin-left:auto}
 kbd{font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface);color:var(--muted)}
+.pestanas{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 12px 10px;padding:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px}
+.pestanas button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:0;background:none;padding:9px 6px;border-radius:9px;cursor:pointer;font-family:var(--f-body);font-size:15.5px;font-weight:650;color:var(--ink-2);line-height:1.2}
+.pestanas button small{font-size:11px;font-weight:450;color:var(--muted)}
+.pestanas button:hover{background:var(--surface-3);color:var(--ink)}
+.pestanas button[aria-current="true"]{background:var(--ink);color:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.pestanas button[aria-current="true"] small{color:inherit;opacity:.75}
+.pestanas.mini{margin:0;flex:1;min-width:0;padding:3px;max-width:320px}
+.pestanas.mini button{padding:6px 4px;font-size:14px}
+.pestanas.mini button small{display:none}
 .navmain{display:flex;flex-direction:column;gap:1px;padding:4px 10px 10px;border-bottom:1px solid var(--line-2)}
 .navmain button{display:flex;align-items:center;gap:11px;background:none;border:0;padding:7px 10px;border-radius:9px;cursor:pointer;text-align:left;font-size:15px;color:var(--ink-2)}
 .navmain button svg{width:18px;height:18px;flex:none;opacity:.75}
@@ -1624,7 +1633,7 @@ button.shl-n:hover{background:var(--surface-3)}
 </style>
 </head>
 <body>
-<div id="barra"><button class="b sec sm" id="btnMenu" aria-expanded="false" aria-controls="rail" type="button">☰ Índice</button><b id="barraTit">Servicios en Red</b><button class="b sec sm" data-acc="paleta" type="button">Buscar</button></div>
+<div id="barra"><button class="b sec sm" id="btnMenu" aria-expanded="false" aria-controls="rail" type="button">☰ Índice</button><div id="barraTabs" class="pestanas mini" role="tablist" aria-label="Sesiones o apuntes"></div><button class="b sec sm" data-acc="paleta" type="button">Buscar</button></div>
 <div id="app" data-b="0"><nav id="rail" aria-label="Navegación principal"></nav><div id="velo"></div><main id="main"><div id="vista"><p class="muted" style="padding:40px 0">Abriendo el curso…</p></div></main></div>
 <div id="lienzo" aria-hidden="true"></div>
 <div id="tostadas" aria-live="polite"></div>
@@ -1643,7 +1652,7 @@ const DATOS_Z = {
 'use strict';
 
 const APP = {
-  version: '1.2',
+  version: '1.3',
   fecha: '16/10/2026',
   sello: '2026-10-16-servicios-red-dns-arbol-b',
   bloques: {
@@ -7964,11 +7973,11 @@ const EXAMEN = [
 const LOGO = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="2.6"/><circle cx="5" cy="18" r="2.6"/><circle cx="19" cy="18" r="2.6"/><path d="M10.7 7.2 6.3 15.8M13.3 7.2l4.4 8.6M7.6 18h8.8" stroke="var(--b7)"/></svg>';
 
 /* ---------- navegación ---------- */
-function token(v, id) { return v === 'curso' ? 'inicio' : v === 'sesion' ? id : v === 'ref' ? 'referencia' : v === 'concepto' ? 'f-' + id : v === 'lab' ? 'laboratorio' : v === 'labsim' ? 'lab-' + id : v === 'verif' ? 'verificador' : v === 'progreso' ? 'progreso' : 'inicio'; }
+function token(v, id) { return v === 'curso' ? 'sesiones' : v === 'sesion' ? id : v === 'ref' ? 'apuntes' : v === 'concepto' ? 'f-' + id : v === 'lab' ? 'laboratorio' : v === 'labsim' ? 'lab-' + id : v === 'verif' ? 'verificador' : v === 'progreso' ? 'progreso' : 'inicio'; }
 function deToken(t) {
   t = (t || '').replace(/^#/, '');
   if (/^S\d{2}$/.test(t) && APP.porId[t]) return { v: 'sesion', id: t };
-  if (t === 'referencia') return { v: 'ref' };
+  if (t === 'referencia' || t === 'apuntes') return { v: 'ref' };
   if (t.startsWith('f-') && APP.refId[t.slice(2)]) return { v: 'concepto', id: t.slice(2) };
   if (t === 'laboratorio') return { v: 'lab' };
   if (t.startsWith('lab-') && SIMS[t.slice(4)]) return { v: 'labsim', id: t.slice(4) };
@@ -7995,18 +8004,25 @@ function bloqueDeVista() {
 function bloqueDeFicha(id) { return APP.refId[id] ? temaDeFicha(APP.refId[id]) : '0'; }
 
 /* ---------- rail ---------- */
+function pestanasBotones(v, sub) {
+  const ap = v.v === 'ref' || v.v === 'concepto', se = v.v === 'curso' || v.v === 'sesion';
+  return `<button data-ir="curso" type="button" role="tab" aria-selected="${se}"${se ? ' aria-current="true"' : ''}>Sesiones${sub ? '<small>clase a clase</small>' : ''}</button>` +
+    `<button data-ir="ref" type="button" role="tab" aria-selected="${ap}"${ap ? ' aria-current="true"' : ''}>Apuntes${sub ? '<small>la teoría por temas</small>' : ''}</button>`;
+}
+function pestanasHTML(v) { return pestanasBotones(v, false); }
 function pintaRail() {
   const v = APP.vista; const abierto = bloqueDeVista();
   const modoRef = v.v === 'ref' || v.v === 'concepto';
   let h = `<div class="marca"><div class="logo">${LOGO}</div><div><b>Servicios en Red</b><span>2.º SMR · 2026-2027</span></div></div>
-  <button class="buscabtn" data-acc="paleta" type="button">${ICO.buscar}<span>Buscar sesión, ficha…</span><kbd>Ctrl K</kbd></button>
-  <nav class="navmain" aria-label="Secciones">
-    ${bot('curso', 'Inicio', ICO.inicio, v.v === 'curso')}${bot('ref', 'Referencia', ICO.ref, modoRef)}
+  <button class="buscabtn" data-acc="paleta" type="button">${ICO.buscar}<span>Buscar…</span><kbd>Ctrl K</kbd></button>
+  <div class="pestanas" role="tablist" aria-label="Sesiones o apuntes">${pestanasBotones(v, true)}</div>
+  <nav class="navmain" aria-label="Otras secciones">
     ${bot('lab', 'Laboratorio', ICO.lab, v.v === 'lab' || v.v === 'labsim')}${bot('progreso', 'Mi progreso', ICO.prog, v.v === 'progreso')}
   </nav><div class="navbloques">`;
+  if (!modoRef) h += `<div class="navtit">Sesiones por tema</div>`;
   if (modoRef) {
     const abiertoRef = v.v === 'concepto' && APP.refId[v.id] ? temaDeFicha(APP.refId[v.id]) : '0';
-    h += `<div class="navtit">Fichas de referencia</div>`;
+    h += `<div class="navtit">Apuntes por tema</div>`;
     for (const bId of Object.keys(APP.bloques)) {
       const b = APP.bloques[bId]; const cs = APP.conceptos.filter(c => temaDeFicha(c) === bId); if (!cs.length) continue;
       const des = APP.railAbiertoRef[bId] !== undefined ? APP.railAbiertoRef[bId] : abiertoRef === bId;
@@ -8051,8 +8067,8 @@ function vistaCurso() {
   const qs = Object.values(APP.estado.q), ok = qs.filter(q => q.ok).length;
   const sig = APP.porId[UI.ultima] || APP.sesiones.find(s => !sesionCompleta(s)) || APP.sesiones[0];
   let h = `<section class="portada"><div class="intro"><div class="eyebrow">2.º SMR · Curso 2026-2027 · 6 horas semanales · Versión ${esc(APP.version)} (${esc(APP.fecha)})</div><h1>Servicios en Red</h1>
-    <p class="lead">Cada sesión trae su guion, ejercicios en cuatro carriles según tu punto de partida y preguntas para comprobar lo que has entendido. Algunas cierran con un <b>programa completo</b> que junta lo del bloque. La teoría extensa vive en la <button class="ref" data-ir="ref" type="button">Referencia</button>.</p>
-    <p class="lead2">Cada tema se numera igual que sus fichas de referencia (por ejemplo, la sesión 3.2 usa la ficha 3.2.1), para que sea fácil localizar cualquier cosa. El curso se organiza en un repaso y ocho temas, agrupados en tres bloques de examen: <b>Tema 0</b> repaso de redes, <b>Tema 1</b> DHCP, <b>Tema 2</b> DNS, <b>Tema 3</b> HTTP, <b>Tema 4</b> FTP, <b>Tema 5</b> acceso remoto, <b>Tema 6</b> correo electrónico, <b>Tema 7</b> interconexión de redes y <b>Tema 8</b> redes inalámbricas.</p>
+    <p class="lead">Cada sesión trae su guion, ejercicios en cuatro carriles según tu punto de partida y preguntas para comprobar lo que has entendido. Algunas cierran con un <b>programa completo</b> que junta lo del bloque. La teoría completa está en la pestaña <button class="ref" data-ir="ref" type="button">Apuntes</button>.</p>
+    <p class="lead2">Cada tema se numera igual que sus apuntes (por ejemplo, la sesión 3.2 usa la ficha de apuntes 3.2.1), para que sea fácil localizar cualquier cosa. El curso se organiza en un repaso y ocho temas, agrupados en tres bloques de examen: <b>Tema 0</b> repaso de redes, <b>Tema 1</b> DHCP, <b>Tema 2</b> DNS, <b>Tema 3</b> HTTP, <b>Tema 4</b> FTP, <b>Tema 5</b> acceso remoto, <b>Tema 6</b> correo electrónico, <b>Tema 7</b> interconexión de redes y <b>Tema 8</b> redes inalámbricas.</p>
     <div class="pila">${Object.keys(APP.bloques).map(b => `<button type="button" data-salta="bloque-${b}" data-b="${b}" style="background:var(--acc-soft);color:var(--acc)">${esc(APP.bloques[b].t)}</button>`).join('')}</div></div>
     <div class="continuar"><span class="et">${UI.ultima ? 'Continuar donde lo dejaste' : 'Empieza aquí'}</span><h3>${esc(numS(sig))} · ${esc(titS(sig))}</h3><p>${esc(sig.objetivo)}</p><button class="b" data-ir="sesion" data-id="${sig.id}" type="button">Abrir la sesión →</button><span class="deco">${esc(numS(sig))}</span></div></section>
     <div class="rejilla">
@@ -8096,11 +8112,11 @@ function vistaSesion(id) {
   const b = APP.bloques[s.bloque]; const idx = APP.sesiones.indexOf(s);
   const ant = APP.sesiones[idx - 1], sig = APP.sesiones[idx + 1];
   const ent = s.ejercicios.some(e => e.entrega); const sims = simsDe(SIM_SES[s.id]);
-  let h = `<header class="hero"><div class="ruta"><button data-ir="curso" type="button">Curso</button><span>/</span><button data-ir="curso" data-salta-tras="bloque-${s.bloque}" type="button">${esc(b.n)} · ${esc(b.t)}</button><span>/</span><span>Sesión ${esc(numS(s))}</span></div>
+  let h = `<header class="hero"><div class="ruta"><button data-ir="curso" type="button">Sesiones</button><span>/</span><button data-ir="curso" data-salta-tras="bloque-${s.bloque}" type="button">${esc(b.n)} · ${esc(b.t)}</button><span>/</span><span>Sesión ${esc(numS(s))}</span></div>
     <div class="fila1" style="margin-top:14px"><span class="chipb"><b>T${s.bloque}</b>${esc(b.t)}</span><span class="sid">${esc(numS(s))}</span><span class="muted small">Sesión ${idx + 1} de ${APP.sesiones.length}</span></div>
     <h1>${esc(titS(s))}</h1><div class="objetivo"><span class="et">Objetivo</span><p>${esc(s.objetivo)}</p></div>
     <div class="metas"><span class="m">${s.ejercicios.length} ejercicios · carriles ${s.ejercicios.map(e => e.carril).join(', ')}</span>${s.auto.length ? `<span class="m">${s.auto.length + (s.diag ? 1 : 0)} preguntas</span>` : ''}${ent ? '<span class="chip entrega">Entrega en Classroom</span>' : ''}${sims.length ? `<span class="chip chiplab">${sims.length} simulador${sims.length > 1 ? 'es' : ''}</span>` : ''}</div>`;
-  if (s.conceptos.length) h += `<div class="fichasrel"><span>Referencia de esta sesión:</span>${s.conceptos.map(c => APP.refId[c] ? `<button class="ref" data-ref="${c}" type="button">${esc(APP.refId[c].titulo)}</button>` : '').join('')}</div>`;
+  if (s.conceptos.length) h += `<div class="fichasrel"><span>Apuntes de esta sesión:</span>${s.conceptos.map(c => APP.refId[c] ? `<button class="ref" data-ref="${c}" type="button">${esc(APP.refId[c].titulo)}</button>` : '').join('')}</div>`;
   h += `</header><div class="lectura"><article><div class="md guion">${md(s.guion)}</div>`;
   if (s.diag) h += `<div class="parte" id="antes"><h2>Antes de empezar</h2><p>Una pregunta rápida para saber desde dónde partes. Te ayuda a elegir carril.</p></div>` + pregunta(s.diag, s.id + ':d', 'diag');
   h += `<div class="parte" id="ejercicios"><h2>Ejercicios</h2><p>Haz el que corresponda a tu punto de partida. Si acabas, no pases a la sesión siguiente: sube de carril en esta misma. Las prácticas de cierre marcadas como entrega son obligatorias para todo el alumnado. Las comprobaciones con hardware o redes se realizan en el laboratorio con el profesor.</p></div>`;
@@ -8187,8 +8203,8 @@ function montaTOC(scope) {
 /* ---------- referencia ---------- */
 let filtroRef = '';
 function vistaRef() {
-  return `<header class="hero"><div class="eyebrow">Referencia</div><h1>La teoría, por concepto</h1><p class="lead">La teoría, organizada por concepto y no por día. Está aquí para consultarla en marzo cuando no recuerdes de qué sesión era.</p>
-    <div class="buscador" style="margin-top:16px;max-width:520px"><input type="search" id="busca" value="${esc(filtroRef)}" placeholder="DORA, zona inversa, chroot, masquerade…" aria-label="Buscar en la referencia"></div></header><div id="refres">${listaRef()}</div>`;
+  return `<header class="hero"><div class="eyebrow">Apuntes</div><h1>La teoría, por concepto</h1><p class="lead">La teoría, organizada por concepto y no por día. Está aquí para consultarla en marzo cuando no recuerdes de qué sesión era.</p>
+    <div class="buscador" style="margin-top:16px;max-width:520px"><input type="search" id="busca" value="${esc(filtroRef)}" placeholder="DORA, zona inversa, chroot, masquerade…" aria-label="Buscar en los apuntes"></div></header><div id="refres">${listaRef()}</div>`;
 }
 function listaRef() {
   const f = normaliza(filtroRef.trim()); let h = '', n = 0, temaAct = null;
@@ -8215,8 +8231,8 @@ function vistaConcepto(id) {
   const ant = pos > 0 ? todas[pos - 1] : null, sig = pos < todas.length - 1 ? todas[pos + 1] : null;
   const hermanas = todas.filter(x => x.tema === c.tema), usos = APP.sesiones.filter(s => s.conceptos.includes(id));
   const bInfo = APP.bloques[temaDeFicha(c)];
-  let h = `<header class="hero"><div class="ruta"><button data-ir="ref" type="button">Referencia</button><span>/</span><span>${esc(bInfo ? bInfo.n : '')}</span><span>/</span><span>${esc(c.tema)}</span><span>/</span><span class="mono">#${esc(c.id)}</span></div>
-    <div class="fila1" style="margin-top:14px"><span class="chipb"><b>T${temaDeFicha(c)}</b>${esc(bInfo ? bInfo.t : '')}</span><span class="sid">${esc(numF(c))}</span><span class="muted small">Ficha de referencia</span></div><h1>${esc(titF(c))}</h1>`;
+  let h = `<header class="hero"><div class="ruta"><button data-ir="ref" type="button">Apuntes</button><span>/</span><span>${esc(bInfo ? bInfo.n : '')}</span><span>/</span><span>${esc(c.tema)}</span><span>/</span><span class="mono">#${esc(c.id)}</span></div>
+    <div class="fila1" style="margin-top:14px"><span class="chipb"><b>T${temaDeFicha(c)}</b>${esc(bInfo ? bInfo.t : '')}</span><span class="sid">${esc(numF(c))}</span><span class="muted small">Apuntes</span></div><h1>${esc(titF(c))}</h1>`;
   if (usos.length) h += `<div class="usadoen"><span>Se usa en</span>${usos.map(s => `<button class="sesref" data-ir="sesion" data-id="${s.id}" type="button"><b>${esc(numS(s))}</b>${esc(titS(s))}</button>`).join('')}</div>`;
   h += `</header><div class="lectura"><article><div class="md ficha">${md(c.cuerpo)}</div>
     <nav class="pasos" aria-label="Ficha anterior y siguiente">` +
@@ -8269,7 +8285,7 @@ function vistaProgreso() {
   }
   h += `</div><div class="bloqueh"><h2>Copia de seguridad</h2></div><p>El navegador puede borrar sus datos si se limpia el historial o si usas el modo incógnito. Exporta de vez en cuando: es la única copia que no depende de nadie.</p>
   <div class="acciones" style="border:0"><button class="b" data-acc="exportar" type="button">Exportar a un archivo</button><button class="b sec" data-acc="importar" type="button">Importar desde un archivo</button><button class="b sec" data-acc="borrar" type="button">Borrar mi progreso</button></div><div data-zona="borrado"></div>${hayAntigua() ? `<div class="bloqueh"><h2>Progreso de la versión anterior</h2></div><p>La versión anterior de este curso guardaba el progreso bajo un nombre que compartía con otro curso (Lenguajes de Marcas), así que los dos podían pisarse. Esta versión guarda aparte. Si tenías progreso en la versión anterior, puedes traerlo aquí.</p><div class="acciones" style="border:0"><button class="b sec" data-acc="antigua" type="button">Recuperar progreso de la versión anterior</button></div><div data-zona="antigua"></div>` : ''}
-  <p class="sello">Versión ${esc(APP.version)} · ${esc(APP.fecha)} · ${APP.sesiones.length} sesiones · ${APP.conceptos.length} fichas de referencia · ${Object.keys(SIMS).length} simuladores · almacenamiento local ${localDisponible() ? 'disponible' : 'NO disponible'}${window.storage ? ' · copia en la nube disponible' : ''}</p></div>`;
+  <p class="sello">Versión ${esc(APP.version)} · ${esc(APP.fecha)} · ${APP.sesiones.length} sesiones · ${APP.conceptos.length} fichas de apuntes · ${Object.keys(SIMS).length} simuladores · almacenamiento local ${localDisponible() ? 'disponible' : 'NO disponible'}${window.storage ? ' · copia en la nube disponible' : ''}</p></div>`;
   return h;
 }
 function leeAntigua() { try { const x = JSON.parse(localStorage.getItem(CLAVE_ANTIGUA) || 'null'); return x && typeof x === 'object' ? sanea(x) : null; } catch (e) { return null; } }
@@ -8290,7 +8306,7 @@ function pinta() {
   if (v.v === 'concepto') seccionaYLabs($('.ficha'), simsDe(SIM_FICHA[v.id]));
   montaSims(vista);
   if (v.v === 'sesion' || v.v === 'concepto') montaTOC(vista);
-  $('#barraTit').textContent = v.v === 'sesion' && APP.porId[v.id] ? APP.porId[v.id].titulo : v.v === 'concepto' && APP.refId[v.id] ? APP.refId[v.id].titulo : 'Servicios en Red';
+  $('#barraTabs').innerHTML = pestanasHTML(v);
   document.title = (v.v === 'sesion' && APP.porId[v.id] ? APP.porId[v.id].titulo + ' · ' : v.v === 'concepto' && APP.refId[v.id] ? APP.refId[v.id].titulo + ' · ' : '') + 'Servicios en Red';
   engancha();
 }
@@ -8310,9 +8326,9 @@ function filtraPaleta(q) {
   const n = normaliza(q.trim()); const res = [];
   const pun = (t, extra) => { if (!n) return 1; const a = normaliza(t); if (a.startsWith(n)) return 3; if (a.includes(n)) return 2; if (extra && normaliza(extra).includes(n)) return 1; return 0; };
   APP.sesiones.forEach(s => { const p = pun(s.titulo, s.objetivo); if (p) res.push({ g: 'Sesiones', k: numS(s), t: titS(s), d: s.objetivo, p: p + (n ? 0 : -1), ir: ['sesion', s.id], b: s.bloque }); });
-  APP.conceptos.forEach(c => { const p = pun(c.titulo, c.tema + ' ' + (n.length > 2 ? c.cuerpo : '')); if (p) res.push({ g: 'Referencia', k: numF(c) || '§', t: titF(c), d: c.tema, p, ir: ['concepto', c.id], b: bloqueDeFicha(c.id) }); });
+  APP.conceptos.forEach(c => { const p = pun(c.titulo, c.tema + ' ' + (n.length > 2 ? c.cuerpo : '')); if (p) res.push({ g: 'Apuntes', k: numF(c) || '§', t: titF(c), d: c.tema, p, ir: ['concepto', c.id], b: bloqueDeFicha(c.id) }); });
   Object.values(SIMS).forEach(x => { const p = pun(x.t, x.d); if (p) res.push({ g: 'Laboratorio', k: 'Lab', t: x.t, d: x.d.slice(0, 90) + '…', p, ir: ['labsim', x.id], b: x.b }); });
-  const orden = ['Sesiones', 'Referencia', 'Laboratorio'];
+  const orden = ['Sesiones', 'Apuntes', 'Laboratorio'];
   const porG = orden.map(g => res.filter(r => r.g === g).sort((a, b) => b.p - a.p).slice(0, n ? 8 : 5));
   PAL.items = porG.flat(); PAL.sel = 0;
   let h = ''; let k = 0;
