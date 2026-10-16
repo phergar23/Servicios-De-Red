@@ -1643,6 +1643,8 @@ const DATOS_Z = {
 'use strict';
 
 const APP = {
+  version: '1.1',
+  fecha: '16/10/2026',
   sello: '2026-10-16-servicios-red-dns-arbol',
   bloques: {
     '0': { n: 'Tema 0', t: 'Repaso de redes de primero', d: 'Capas, dispositivos, cableado, IP y subredes, ARP, diagnóstico, Ethernet, TCP/UDP, wifi, seguridad básica, Linux y virtualización. Veinte sesiones antes de entrar en los servicios del módulo.' },
@@ -8037,7 +8039,7 @@ function pintaRail() {
     }
   }
   const tema = UI.tema || 'auto';
-  h += `</div><div class="railpie"><div class="row"><span>Tema</span><button class="tema-btn" data-acc="tema" type="button">${tema === 'auto' ? 'Automático' : tema === 'dark' ? 'Oscuro' : 'Claro'}</button></div><div>v ${esc(APP.sello)} · rediseño</div></div>`;
+  h += `</div><div class="railpie"><div class="row"><span>Tema</span><button class="tema-btn" data-acc="tema" type="button">${tema === 'auto' ? 'Automático' : tema === 'dark' ? 'Oscuro' : 'Claro'}</button></div><div>Versión ${esc(APP.version)} · ${esc(APP.fecha)}</div></div>`;
   $('#rail').innerHTML = h;
   function bot(dest, txt, ico, act) { return `<button data-ir="${dest}" type="button"${act ? ' aria-current="true"' : ''}>${ico}<span>${txt}</span></button>`; }
 }
@@ -8048,7 +8050,7 @@ function vistaCurso() {
   const totEj = APP.sesiones.reduce((a, s) => a + s.ejercicios.length, 0), hech = APP.sesiones.reduce((a, s) => a + nHechos(s), 0);
   const qs = Object.values(APP.estado.q), ok = qs.filter(q => q.ok).length;
   const sig = APP.porId[UI.ultima] || APP.sesiones.find(s => !sesionCompleta(s)) || APP.sesiones[0];
-  let h = `<section class="portada"><div class="intro"><div class="eyebrow">2.º SMR · Curso 2026-2027 · 6 horas semanales</div><h1>Servicios en Red</h1>
+  let h = `<section class="portada"><div class="intro"><div class="eyebrow">2.º SMR · Curso 2026-2027 · 6 horas semanales · Versión ${esc(APP.version)} (${esc(APP.fecha)})</div><h1>Servicios en Red</h1>
     <p class="lead">Cada sesión trae su guion, ejercicios en cuatro carriles según tu punto de partida y preguntas para comprobar lo que has entendido. Algunas cierran con un <b>programa completo</b> que junta lo del bloque. La teoría extensa vive en la <button class="ref" data-ir="ref" type="button">Referencia</button>.</p>
     <p class="lead2">Cada tema se numera igual que sus fichas de referencia (por ejemplo, la sesión 3.2 usa la ficha 3.2.1), para que sea fácil localizar cualquier cosa. El curso se organiza en un repaso y ocho temas, agrupados en tres bloques de examen: <b>Tema 0</b> repaso de redes, <b>Tema 1</b> DHCP, <b>Tema 2</b> DNS, <b>Tema 3</b> HTTP, <b>Tema 4</b> FTP, <b>Tema 5</b> acceso remoto, <b>Tema 6</b> correo electrónico, <b>Tema 7</b> interconexión de redes y <b>Tema 8</b> redes inalámbricas.</p>
     <div class="pila">${Object.keys(APP.bloques).map(b => `<button type="button" data-salta="bloque-${b}" data-b="${b}" style="background:var(--acc-soft);color:var(--acc)">${esc(APP.bloques[b].t)}</button>`).join('')}</div></div>
@@ -8267,7 +8269,7 @@ function vistaProgreso() {
   }
   h += `</div><div class="bloqueh"><h2>Copia de seguridad</h2></div><p>El navegador puede borrar sus datos si se limpia el historial o si usas el modo incógnito. Exporta de vez en cuando: es la única copia que no depende de nadie.</p>
   <div class="acciones" style="border:0"><button class="b" data-acc="exportar" type="button">Exportar a un archivo</button><button class="b sec" data-acc="importar" type="button">Importar desde un archivo</button><button class="b sec" data-acc="borrar" type="button">Borrar mi progreso</button></div><div data-zona="borrado"></div>${hayAntigua() ? `<div class="bloqueh"><h2>Progreso de la versión anterior</h2></div><p>La versión anterior de este curso guardaba el progreso bajo un nombre que compartía con otro curso (Lenguajes de Marcas), así que los dos podían pisarse. Esta versión guarda aparte. Si tenías progreso en la versión anterior, puedes traerlo aquí.</p><div class="acciones" style="border:0"><button class="b sec" data-acc="antigua" type="button">Recuperar progreso de la versión anterior</button></div><div data-zona="antigua"></div>` : ''}
-  <p class="sello">Versión ${esc(APP.sello)} · ${APP.sesiones.length} sesiones · ${APP.conceptos.length} fichas de referencia · ${Object.keys(SIMS).length} simuladores · almacenamiento local ${localDisponible() ? 'disponible' : 'NO disponible'}${window.storage ? ' · copia en la nube disponible' : ''}</p></div>`;
+  <p class="sello">Versión ${esc(APP.version)} · ${esc(APP.fecha)} · ${APP.sesiones.length} sesiones · ${APP.conceptos.length} fichas de referencia · ${Object.keys(SIMS).length} simuladores · almacenamiento local ${localDisponible() ? 'disponible' : 'NO disponible'}${window.storage ? ' · copia en la nube disponible' : ''}</p></div>`;
   return h;
 }
 function leeAntigua() { try { const x = JSON.parse(localStorage.getItem(CLAVE_ANTIGUA) || 'null'); return x && typeof x === 'object' ? sanea(x) : null; } catch (e) { return null; } }
@@ -8396,7 +8398,7 @@ document.addEventListener('click', ev => {
 function localiza(k) { const [sid, c] = k.split(':'); const s = APP.porId[sid]; const i = c === 'undefined' ? 3 : 'ABC'.indexOf(c); return { s, e: s.ejercicios[i] }; }
 function localizaPreg(k) { const [sid, resto] = k.split(':'); const s = APP.porId[sid]; if (!s) return {}; if (resto === 'd') return { s, q: s.diag }; return { s, q: s.auto[+resto.slice(1)] }; }
 async function exporta() {
-  const datos = JSON.stringify({ app: 'servicios-en-red', sello: APP.sello, estado: APP.estado }, null, 1);
+  const datos = JSON.stringify({ app: 'servicios-en-red', version: APP.version, sello: APP.sello, estado: APP.estado }, null, 1);
   const nombreArch = 'sr-' + (APP.estado.alumno || 'progreso').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + new Date().toISOString().slice(0, 10) + '.json';
   if (window.claude && typeof window.claude.use === 'function') {
     let dl = null; try { dl = await window.claude.use('downloads'); } catch (e) { }
